@@ -15,15 +15,18 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { theme } from "./colors";
 import { Fontisto } from "@expo/vector-icons";
+import BouncyCheckbox from "react-native-bouncy-checkbox";
 
 const STORAGE_KEY = "@toDos";
 export default function App() {
   const [working, setWorking] = useState(true);
   const [text, setText] = useState("");
   const [toDos, setToDos] = useState({});
+  const [check, setCheck] = useState(false);
 
   const travel = () => setWorking(false);
   const work = () => setWorking(true);
+
   const onChangeText = (payload) => setText(payload);
   const saveToDos = async (toSave) => {
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
@@ -39,7 +42,7 @@ export default function App() {
     if (text === "") {
       return;
     }
-    const newToDos = { ...toDos, [Date.now()]: { text, working } };
+    const newToDos = { ...toDos, [Date.now()]: { text, working, check } };
     setToDos(newToDos);
     await saveToDos(newToDos);
     setText("");
@@ -60,20 +63,33 @@ export default function App() {
       },
     ]);
   };
+  const checkedBox = async (key) => {
+    toDos[key].check = !toDos[key].check;
+    const newToDos = { ...toDos };
+    setToDos(newToDos);
+    await saveToDos(newToDos);
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar style="auto" />
       <View style={styles.header}>
         <TouchableOpacity onPress={work}>
           <Text
-            style={{ ...styles.btnText, color: working ? "white" : theme.grey }}
+            style={{
+              ...styles.btnText,
+              color: working ? "white" : theme.grey,
+            }}
           >
             Work
           </Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={travel}>
           <Text
-            style={{ ...styles.btnText, color: working ? theme.grey : "white" }}
+            style={{
+              ...styles.btnText,
+              color: working ? theme.grey : "white",
+            }}
           >
             Travel
           </Text>
@@ -93,7 +109,26 @@ export default function App() {
         {Object.keys(toDos).map((key) =>
           toDos[key].working === working ? (
             <View style={styles.toDo} key={key}>
-              <Text style={styles.toDoText}>{toDos[key].text}</Text>
+              {toDos[key].check ? (
+                <BouncyCheckbox
+                  style={styles.toDoText}
+                  fillColor="#c0392b"
+                  innerIconStyle={{ borderWidth: 2 }}
+                  size={18}
+                  onPress={() => checkedBox(key)}
+                  text={toDos[key].text}
+                  isChecked="true"
+                />
+              ) : (
+                <BouncyCheckbox
+                  style={styles.toDoText}
+                  fillColor="#c0392b"
+                  innerIconStyle={{ borderWidth: 2 }}
+                  size={18}
+                  onPress={() => checkedBox(key)}
+                  text={toDos[key].text}
+                />
+              )}
               <TouchableOpacity onPress={() => deleteToDo(key)}>
                 <Text>
                   <Fontisto name="trash" size={18} color={theme.grey} />
@@ -141,8 +176,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   toDoText: {
-    color: "white",
     fontSize: 16,
     fontWeight: "500",
+  },
+  checkedBox: {
+    textDecorationLine: "line-through",
+    color: theme.grey,
   },
 });
